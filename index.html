@@ -3,69 +3,97 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>برنامج المراقبة</title>
-  <link rel="stylesheet" href="./app.css" />
+  <title>برنامج المراقبة - HTML → Excel</title>
+  <style>
+    body{font-family:system-ui;margin:16px;background:#f7f7f8;color:#111}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+    .card{background:#fff;border:1px solid #e6e6e9;border-radius:14px;padding:12px}
+    .card.wide{flex:1;min-width:520px}
+    input,button,select{padding:8px 10px;border:1px solid #ddd;border-radius:10px}
+    button{cursor:pointer;background:#fff}
+    button:hover{background:#f1f1f4}
+    .muted{opacity:.7;font-size:12px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+    .day{border:1px solid #e6e6e9;border-radius:14px;padding:10px;background:#fafafa;cursor:pointer}
+    .day:hover{background:#f2f2f6}
+    .day.active{outline:2px solid #7aa7ff;background:#eef4ff}
+    .day .d{font-weight:700}
+    .day .s{font-size:12px;opacity:.7;margin-top:4px}
+    .formRow{display:flex;gap:8px;flex-wrap:wrap}
+    .formRow input{flex:1;min-width:160px}
+    .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+    .tag{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid #ddd;background:#fff;font-size:12px}
+    .tag button{padding:0 6px;border-radius:999px}
+    table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #eee;border-radius:12px;overflow:hidden}
+    th,td{border-bottom:1px solid #eee;padding:8px 10px;font-size:13px;white-space:nowrap}
+    th{background:#fafafa}
+    .ok{color:#1a7f37;font-weight:700}
+  </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">برنامج المراقبة</div>
-    <div class="actions">
-      <button id="btnRunAll">توزيع الكل</button>
-      <button id="btnRefresh">تحديث</button>
+
+  <h2>برنامج المراقبة (HTML) + حفظ الاستثناءات لكل يوم + تصدير Excel</h2>
+
+  <div class="row">
+    <div class="card">
+      <h3>1) رفع ملف الكنترول</h3>
+      <input type="file" id="file" accept=".xlsx" />
+      <div class="muted" style="margin-top:8px;">
+        الملف يجب أن يحتوي على شيتات: <b>المعلمين</b> و <b>الاختبارات</b> (و <b>الإعدادات</b> اختياري).
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button id="btnRunAll" disabled>توزيع جميع الأيام</button>
+        <button id="btnExport" disabled>تصدير Excel</button>
+      </div>
+
+      <div id="status" class="muted" style="margin-top:10px;">جاهز</div>
     </div>
-  </header>
 
-  <main class="layout">
-    <section class="panel">
-      <h2>الأيام</h2>
-      <div id="daysGrid" class="days-grid"></div>
-    </section>
-
-    <section class="panel">
-      <h2>استثناءات</h2>
-
-      <div class="tabs">
-        <button class="tab active" data-tab="t1">استثناء معلمين</button>
-        <button class="tab" data-tab="t2">استثناء مواد</button>
-        <button class="tab" data-tab="t3">كشف المتابعة</button>
+    <div class="card wide">
+      <h3>2) الأيام (اضغط يوم لإضافة استثناءاته)</h3>
+      <div id="daysGrid" class="grid"></div>
+      <div class="muted" style="margin-top:8px;">
+        الاستثناءات هنا تُحفظ <b>لكل يوم</b> ثم تُطبّق عند “توزيع جميع الأيام”.
       </div>
+    </div>
+  </div>
 
-      <div id="t1" class="tabpane active">
-        <div class="formRow">
-          <input id="excTeacherDate" placeholder="dd/MM/yyyy مثل 22/12/2025" />
-          <input id="excTeacherName" placeholder="اسم المعلم" />
-          <button id="btnAddExcTeacher">إضافة</button>
+  <div class="row" style="margin-top:12px;">
+    <div class="card wide">
+      <h3 id="dayTitle">استثناءات اليوم: —</h3>
+
+      <div class="row" style="gap:10px;">
+        <div class="card" style="flex:1;min-width:320px;background:#fbfbfc">
+          <h4>استثناء مواد (يُستثنى معلمو هذه المواد)</h4>
+          <div class="formRow">
+            <input id="subInput" placeholder="مثال: الرياضيات" />
+            <button id="addSub" disabled>إضافة</button>
+          </div>
+          <div id="subTags" class="tags"></div>
         </div>
-        <div id="excTeachersTable" class="table"></div>
-      </div>
 
-      <div id="t2" class="tabpane">
-        <div class="formRow">
-          <input id="excSubjectDate" placeholder="dd/MM/yyyy مثل 22/12/2025" />
-          <input id="excSubjectName" placeholder="اسم المادة" />
-          <button id="btnAddExcSubject">إضافة</button>
+        <div class="card" style="flex:1;min-width:320px;background:#fbfbfc">
+          <h4>استثناء معلمين (بالاسم)</h4>
+          <div class="formRow">
+            <input id="teaInput" placeholder="مثال: وائل حسين" />
+            <button id="addTea" disabled>إضافة</button>
+          </div>
+          <div id="teaTags" class="tags"></div>
         </div>
-        <div id="excSubjectsTable" class="table"></div>
       </div>
 
-      <div id="t3" class="tabpane">
-        <div id="followTable" class="table"></div>
+      <div class="muted" style="margin-top:10px;">
+        الشروط العامة: منع معلم المادة من مراقبة مادته (B2)، منع فترتين متتاليتين (C2)، ومنع المراقبة مرتين في نفس اليوم (مفعّل دائمًا).
       </div>
-    </section>
+    </div>
+  </div>
 
-    <section class="panel">
-      <h2 id="dailyTitle">نتائج اليوم</h2>
-      <div class="smallActions">
-        <button id="btnRunDay" disabled>إعادة توزيع هذا اليوم</button>
-      </div>
-      <div id="dailyTable" class="table"></div>
-    </section>
-  </main>
+  <h3 style="margin-top:18px;">معاينة (النتائج) بعد التوزيع</h3>
+  <div id="resultsPreview"></div>
 
-  <footer class="footer">
-    <div id="status">جاهز</div>
-  </footer>
-
+  <!-- SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
