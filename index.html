@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>برنامج المراقبة</title>
+  <link rel="stylesheet" href="./app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">برنامج المراقبة</div>
+    <div class="actions">
+      <button id="btnRunAll">توزيع الكل</button>
+      <button id="btnRefresh">تحديث</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <h2>الأيام</h2>
+      <div id="daysGrid" class="days-grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>استثناءات</h2>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="t1">استثناء معلمين</button>
+        <button class="tab" data-tab="t2">استثناء مواد</button>
+        <button class="tab" data-tab="t3">كشف المتابعة</button>
+      </div>
+
+      <div id="t1" class="tabpane active">
+        <div class="formRow">
+          <input id="excTeacherDate" placeholder="dd/MM/yyyy مثل 22/12/2025" />
+          <input id="excTeacherName" placeholder="اسم المعلم" />
+          <button id="btnAddExcTeacher">إضافة</button>
+        </div>
+        <div id="excTeachersTable" class="table"></div>
+      </div>
+
+      <div id="t2" class="tabpane">
+        <div class="formRow">
+          <input id="excSubjectDate" placeholder="dd/MM/yyyy مثل 22/12/2025" />
+          <input id="excSubjectName" placeholder="اسم المادة" />
+          <button id="btnAddExcSubject">إضافة</button>
+        </div>
+        <div id="excSubjectsTable" class="table"></div>
+      </div>
+
+      <div id="t3" class="tabpane">
+        <div id="followTable" class="table"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 id="dailyTitle">نتائج اليوم</h2>
+      <div class="smallActions">
+        <button id="btnRunDay" disabled>إعادة توزيع هذا اليوم</button>
+      </div>
+      <div id="dailyTable" class="table"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div id="status">جاهز</div>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
