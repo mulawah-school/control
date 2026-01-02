@@ -1,99 +1,284 @@
-<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>برنامج المراقبة - HTML → Excel</title>
-  <style>
-    body{font-family:system-ui;margin:16px;background:#f7f7f8;color:#111}
-    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
-    .card{background:#fff;border:1px solid #e6e6e9;border-radius:14px;padding:12px}
-    .card.wide{flex:1;min-width:520px}
-    input,button,select{padding:8px 10px;border:1px solid #ddd;border-radius:10px}
-    button{cursor:pointer;background:#fff}
-    button:hover{background:#f1f1f4}
-    .muted{opacity:.7;font-size:12px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-    .day{border:1px solid #e6e6e9;border-radius:14px;padding:10px;background:#fafafa;cursor:pointer}
-    .day:hover{background:#f2f2f6}
-    .day.active{outline:2px solid #7aa7ff;background:#eef4ff}
-    .day .d{font-weight:700}
-    .day .s{font-size:12px;opacity:.7;margin-top:4px}
-    .formRow{display:flex;gap:8px;flex-wrap:wrap}
-    .formRow input{flex:1;min-width:160px}
-    .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-    .tag{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid #ddd;background:#fff;font-size:12px}
-    .tag button{padding:0 6px;border-radius:999px}
-    table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #eee;border-radius:12px;overflow:hidden}
-    th,td{border-bottom:1px solid #eee;padding:8px 10px;font-size:13px;white-space:nowrap}
-    th{background:#fafafa}
-    .ok{color:#1a7f37;font-weight:700}
-  </style>
-</head>
-<body>
+/********************  أدوات مساعدة  ********************/
 
-  <h2>برنامج المراقبة (HTML) + حفظ الاستثناءات لكل يوم + تصدير Excel</h2>
+function getOrCreateSheet_(ss, name, headers) {
+  let sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
+  if (headers && headers.length) {
+    sh.clear();
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+  return sh;
+}
 
-  <div class="row">
-    <div class="card">
-      <h3>1) رفع ملف الكنترول</h3>
-      <input type="file" id="file" accept=".xlsx" />
-      <div class="muted" style="margin-top:8px;">
-        الملف يجب أن يحتوي على شيتات: <b>المعلمين</b> و <b>الاختبارات</b> (و <b>الإعدادات</b> اختياري).
-      </div>
+function fixDate(d) {
+  // رقم Serial من Excel/Sheets
+  if (typeof d === "number") {
+    return new Date(Math.round((d - 25569) * 86400 * 1000));
+  }
+  if (d instanceof Date && !isNaN(d)) return d;
 
-      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-        <button id="btnRunAll" disabled>توزيع جميع الأيام</button>
-        <button id="btnExport" disabled>تصدير Excel</button>
-      </div>
+  if (typeof d === "string") {
+    // يدعم 2025/12/31 أو 2025-12-31
+    const nd = new Date(d.replace(/-/g, "/"));
+    if (!isNaN(nd)) return nd;
+  }
+  return null;
+}
 
-      <div id="status" class="muted" style="margin-top:10px;">جاهز</div>
-    </div>
+function sameDay(d1, d2) {
+  d1 = fixDate(d1);
+  d2 = fixDate(d2);
+  if (!d1 || !d2) return false;
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+}
 
-    <div class="card wide">
-      <h3>2) الأيام (اضغط يوم لإضافة استثناءاته)</h3>
-      <div id="daysGrid" class="grid"></div>
-      <div class="muted" style="margin-top:8px;">
-        الاستثناءات هنا تُحفظ <b>لكل يوم</b> ثم تُطبّق عند “توزيع جميع الأيام”.
-      </div>
-    </div>
-  </div>
+function dateKey_(dateObj) {
+  return Utilities.formatDate(dateObj, Session.getScriptTimeZone(), "dd/MM");
+}
 
-  <div class="row" style="margin-top:12px;">
-    <div class="card wide">
-      <h3 id="dayTitle">استثناءات اليوم: —</h3>
+function toHours_(val) {
+  // الزمن في الاختبارات عندك في العمود H (index 7)
+  // ممكن يكون:
+  // - رقم (مثل 2.5)
+  // - وقت (Date) مثل 02:30
+  // - رقم كسير من اليوم (مثل 0.104166) = 2.5 ساعة
+  if (val == null || val === "") return 0;
 
-      <div class="row" style="gap:10px;">
-        <div class="card" style="flex:1;min-width:320px;background:#fbfbfc">
-          <h4>استثناء مواد (يُستثنى معلمو هذه المواد)</h4>
-          <div class="formRow">
-            <input id="subInput" placeholder="مثال: الرياضيات" />
-            <button id="addSub" disabled>إضافة</button>
-          </div>
-          <div id="subTags" class="tags"></div>
-        </div>
+  if (val instanceof Date && !isNaN(val)) {
+    return val.getHours() + (val.getMinutes() / 60) + (val.getSeconds() / 3600);
+  }
 
-        <div class="card" style="flex:1;min-width:320px;background:#fbfbfc">
-          <h4>استثناء معلمين (بالاسم)</h4>
-          <div class="formRow">
-            <input id="teaInput" placeholder="مثال: وائل حسين" />
-            <button id="addTea" disabled>إضافة</button>
-          </div>
-          <div id="teaTags" class="tags"></div>
-        </div>
-      </div>
+  const num = Number(val);
+  if (!isNaN(num)) {
+    // إذا الرقم صغير جداً (غالباً كسر يوم)
+    if (num > 0 && num < 1) return num * 24;
+    return num;
+  }
 
-      <div class="muted" style="margin-top:10px;">
-        الشروط العامة: منع معلم المادة من مراقبة مادته (B2)، منع فترتين متتاليتين (C2)، ومنع المراقبة مرتين في نفس اليوم (مفعّل دائمًا).
-      </div>
-    </div>
-  </div>
+  return 0;
+}
 
-  <h3 style="margin-top:18px;">معاينة (النتائج) بعد التوزيع</h3>
-  <div id="resultsPreview"></div>
+/********************  توزيع المراقبين  ********************/
+function توزيع_المراقبين() {
 
-  <!-- SheetJS -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="./app.js"></script>
-</body>
-</html>
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  const teachersSh = ss.getSheetByName("المعلمين");
+  const examsSh    = ss.getSheetByName("الاختبارات");
+  if (!teachersSh || !examsSh) {
+    SpreadsheetApp.getUi().alert("⚠ لازم يكون موجود شيت: المعلمين + الاختبارات فقط.");
+    return;
+  }
+
+  // مخرجات (تتولد تلقائياً)
+  const resultsSh       = getOrCreateSheet_(ss, "النتائج", ["التاريخ","الفترة","اللجنة","المادة","المراقب1","المراقب2"]);
+  const teacherReportSh = getOrCreateSheet_(ss, "كشف_المعلمين", ["اسم المعلم","التاريخ","الفترة","المادة","اللجنة","الزمن(ساعات)"]);
+  const dailyReportSh   = getOrCreateSheet_(ss, "كشف_اليوم", ["التاريخ","الفترة","اللجنة","المادة","المراقب1","المراقب2","الزمن(ساعات)"]);
+  const followSh        = getOrCreateSheet_(ss, "كشف_المتابعة"); // سنبنيه كامل تحت
+
+  // إعدادات اختيارية (لو الشيت موجود)
+  const settings = ss.getSheetByName("الإعدادات");
+  const avoidSubjectTeacher = settings ? (settings.getRange("B2").getValue() === "yes") : true;   // افتراض: نعم
+  const preventConsecutive  = settings ? (settings.getRange("C2").getValue() === "yes") : true;   // افتراض: نعم
+
+  /************* قراءة بيانات المعلمين *************/
+  // شيت المعلمين: (A) ID (B) اسم (C) المادة ...
+  const teacherRows = teachersSh.getRange(2, 1, teachersSh.getLastRow()-1, 6).getValues();
+
+  const teachers = [];
+  const teacherSubject = {}; // اسم -> مادة
+  teacherRows.forEach(r => {
+    const name = (r[1] || "").toString().trim();
+    const subj = (r[2] || "").toString().trim();
+    if (!name) return;
+    teachers.push(name);
+    teacherSubject[name] = subj;
+  });
+
+  /************* قيود منع معلمي المواد حسب التاريخ *************/
+  // المقصود: منع "معلمي هذه المواد" من المراقبة في هذا اليوم
+  const subjectTeacherBan = {
+    "22/12": ["اللغة العربية", "الرياضيات"],
+    "23/12": ["العلوم", "التربية الاسلامية", "اللغة العربية"],
+    "24/12": ["العلوم", "اللغة الانجليزية"],
+    "25/12": ["اللغة الانجليزية", "الدراسات"],
+    "28/12": ["التربية الاسلامية", "العلوم"],
+    "29/12": ["الرياضيات"],
+    "30/12": ["الرياضيات", "الدراسات"],
+    "31/12": ["الدراسات", "العلوم", "الرياضيات"]
+  };
+
+  /************* قيود منع أسماء معلمين *************/
+  const teacherBan = {
+    "21/12": ["حمد محمد المعولي", "محمد البلوشي"],
+    "22/12": ["وائل حسين", "احمد الهطالي", "ماجد الصبحي", "جميل الناعبي"],
+    "23/12": ["ساجان", "احمد جمال", "احمد الهطالي"],
+    "24/12": ["كريم", "سلامة", "وليد خليف"],
+    "25/12": ["وهب", "سعيد سليمان"],
+    "28/12": ["احمد انور", "محمد الهادي"],
+    "31/12": [
+      "خليل","عبدالله محمد","سعيد سليمان","محمد القايدي","هيثم فوزي",
+      "يونس الوشاحي","راشد الغيثي","محمد البلوشي","اباصيري","احمد علي",
+      "ساجان","سلامة احمد","احمد الهطالي","كريم","احمد محمد انور",
+      "عبدالرحمن حسين","محمد الهادي","هاشم حسن","زهير","خالد المحذوري",
+      "عبدالحميد البحري","ناصر السريري","حسين ابراهيم","محمد وليد","فيصل السعدي"
+    ]
+  };
+
+  /************* قراءة الاختبارات *************/
+  // حسب ملفك: Header في الصف 2
+  // A: التاريخ, B: الفترة, C: اللجنة, D: المادة, E: عدد المراقبين, F: الصف, H: الزمن
+  const lastRow = examsSh.getLastRow();
+  if (lastRow < 3) {
+    SpreadsheetApp.getUi().alert("⚠ شيت الاختبارات فاضي.");
+    return;
+  }
+  const examRows = examsSh.getRange(3, 1, lastRow - 2, 8).getValues();
+
+  /************* تتبّع التوازن *************/
+  const teacherHours = {};   // اسم -> مجموع ساعات
+  const teacherDays  = {};   // اسم -> Set(days)
+  const lastPeriod   = {};   // اسم -> آخر فترة
+  const lastDay      = {};   // اسم -> آخر يوم راقب فيه (منع مرتين في اليوم)
+  teachers.forEach(t => {
+    teacherHours[t] = 0;
+    teacherDays[t] = {};
+  });
+
+  // لتجهيز كشف المتابعة: جميع الأيام الفعلية الموجودة في الاختبارات
+  const allDateKeys = [];
+  const dateKeySet = {};
+  examRows.forEach(ex => {
+    const dt = fixDate(ex[0]);
+    if (!dt) return;
+    const dk = dateKey_(dt);
+    if (!dateKeySet[dk]) {
+      dateKeySet[dk] = true;
+      allDateKeys.push(dk);
+    }
+  });
+  // ترتيب الأيام حسب التاريخ الحقيقي
+  allDateKeys.sort((a,b)=>{
+    const [da,ma]=a.split("/").map(Number);
+    const [db,mb]=b.split("/").map(Number);
+    return (ma*100+da) - (mb*100+db);
+  });
+
+  // سنملأ المتابعة: name -> dk -> true
+  const followMap = {}; // {name:{dk:true}}
+  teachers.forEach(n => followMap[n] = {});
+
+  /************* تنفيذ التوزيع *************/
+  let rRow = 2, tRow = 2, dRow = 2;
+
+  examRows.forEach(ex => {
+
+    const dateObj   = fixDate(ex[0]);
+    if (!dateObj) return;
+
+    const dk        = dateKey_(dateObj);
+    const period    = ex[1];
+    const committee = ex[2];
+    const subject   = (ex[3] || "").toString().trim();
+    const num       = Number(ex[4]) || 0;
+    const hours     = toHours_(ex[7]); // H
+
+    if (!num || num < 1) return;
+
+    // اختيار المتاحين
+    const available = [];
+
+    teachers.forEach(name => {
+      const tSubj = (teacherSubject[name] || "").trim();
+
+      // 1) منع معلم المادة من مراقبة مادته (اختياري)
+      if (avoidSubjectTeacher && tSubj && tSubj === subject) return;
+
+      // 2) منع فترتين متتاليتين (اختياري)
+      if (preventConsecutive && lastPeriod[name] === period) return;
+
+      // 3) منع المعلم مرتين في نفس اليوم (شرطك الأساسي)
+      if (lastDay[name] && sameDay(lastDay[name], dateObj)) return;
+
+      // 4) منع معلمي مواد محددة في يوم محدد
+      if (subjectTeacherBan[dk] && subjectTeacherBan[dk].includes(tSubj)) return;
+
+      // 5) منع أسماء محددة في يوم محدد
+      if (teacherBan[dk] && teacherBan[dk].includes(name)) return;
+
+      available.push(name);
+    });
+
+    // فرز حسب الأقل ساعات (توازن)
+    available.sort((a,b) => (teacherHours[a] || 0) - (teacherHours[b] || 0));
+
+    if (available.length < num) {
+      // إذا ما يكفي، نسجّل في اللوج (ولا نوقف كل التوزيع)
+      console.log("Not enough supervisors for committee:", committee, "date:", dk, "period:", period);
+      return;
+    }
+
+    const selected = available.slice(0, num);
+
+    // تحديث
+    selected.forEach(n => {
+      teacherHours[n] = (teacherHours[n] || 0) + hours;
+      lastPeriod[n] = period;
+      lastDay[n] = dateObj;
+
+      followMap[n][dk] = true;
+      teacherDays[n][dk] = true;
+    });
+
+    // كتابة المخرجات
+    const s1 = selected[0] || "";
+    const s2 = selected[1] || "";
+
+    resultsSh.getRange(rRow++, 1, 1, 6).setValues([[dateObj, period, committee, subject, s1, s2]]);
+    dailyReportSh.getRange(dRow++, 1, 1, 7).setValues([[dateObj, period, committee, subject, s1, s2, hours]]);
+
+    selected.forEach(n => {
+      teacherReportSh.getRange(tRow++, 1, 1, 6).setValues([[n, dateObj, period, subject, committee, hours]]);
+    });
+
+  });
+
+  /************* بناء كشف المتابعة (✓ وتلوين + إجمالي الساعات + عدد الأيام) *************/
+  followSh.clear();
+
+  // Header
+  const headers = ["اسم المراقب"].concat(allDateKeys).concat(["إجمالي الساعات", "عدد أيام المراقبة"]);
+  followSh.getRange(1,1,1,headers.length).setValues([headers]);
+
+  // Rows
+  const out = [];
+  teachers.forEach(name => {
+    const row = [name];
+    allDateKeys.forEach(dk => row.push(followMap[name][dk] ? "✓" : ""));
+    const totalHours = Number(teacherHours[name] || 0);
+    const dayCount = Object.keys(teacherDays[name] || {}).length;
+    row.push(totalHours);
+    row.push(dayCount);
+    out.push(row);
+  });
+
+  if (out.length) {
+    followSh.getRange(2,1,out.length,headers.length).setValues(out);
+  }
+
+  // تنسيق: تلوين الخلايا التي فيها ✓
+  const dataRange = followSh.getRange(2, 2, Math.max(out.length,1), allDateKeys.length);
+  const values = dataRange.getValues();
+  const bgs = values.map(r => r.map(v => v === "✓" ? "#d9ead3" : "#ffffff"));
+  dataRange.setBackgrounds(bgs).setHorizontalAlignment("center");
+
+  // تنسيق إجمالي الساعات رقم عشري
+  const totalCol = 1 + allDateKeys.length + 1;
+  followSh.getRange(2, totalCol, out.length, 1).setNumberFormat("0.00");
+
+  SpreadsheetApp.getUi().alert("✔ تم التوزيع بنجاح + منع مرتين في اليوم + توازن حسب الساعات + كشف المتابعة.");
+}
