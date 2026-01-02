@@ -1,0 +1,61 @@
+<div style="padding:20px">
+
+<h2>استثناءات يوم: <span id="day"></span></h2>
+
+<h3>استثناء المعلمين</h3>
+<div id="teachers"></div>
+
+<h3>استثناء المواد</h3>
+<div id="subjects"></div>
+
+<br>
+
+<button onclick="save()">حفظ اليوم</button>
+<button onclick="location.reload()">الرجوع</button>
+
+</div>
+
+<script>
+let currentDay = "";
+let selected = { teachers: [], subjects: [] };
+
+function init(day, teachers, subjects, saved){
+  currentDay = day;
+  document.getElementById("day").textContent = day;
+
+  selected = saved;
+
+  renderList("teachers", teachers, "name");
+  renderList("subjects", subjects);
+}
+
+function renderList(id, data, field=""){
+  let box = document.getElementById(id);
+  box.innerHTML = "";
+
+  data.forEach(item => {
+
+    let value = field ? item[field] : item;
+
+    box.innerHTML += `
+      <label style="display:block">
+        <input type="checkbox" value="${value}" ${selected[id]?.includes(value) ? "checked":""}>
+        ${value}
+      </label>
+    `;
+  });
+}
+
+function save(){
+  let teacherChecks = [...document.querySelectorAll("#teachers input:checked")].map(e=>e.value);
+  let subjectChecks = [...document.querySelectorAll("#subjects input:checked")].map(e=>e.value);
+
+  google.script.run.withSuccessHandler(()=>{
+    alert("✔ تم الحفظ");
+    location.reload();
+  }).saveDayExceptions(currentDay, {
+    teachers: teacherChecks,
+    subjects: subjectChecks
+  });
+}
+</script>
