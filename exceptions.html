@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>الاستثناءات</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<div class="container mt-5">
+
+  <h2 class="fw-bold mb-4">🚫 إدارة الاستثناءات</h2>
+
+  <div class="mb-3">
+    <label class="form-label fw-bold">اختر اليوم</label>
+    <select id="daySelect" class="form-select" onchange="loadExceptions()"></select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label fw-bold">استثناء معلم</label>
+    <select id="teacherSelect" class="form-select"></select>
+    <button class="btn btn-danger mt-2" onclick="addTeacherException()">➕ إضافة</button>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label fw-bold">استثناء مادة</label>
+    <select id="subjectSelect" class="form-select"></select>
+    <button class="btn btn-warning mt-2" onclick="addSubjectException()">➕ إضافة</button>
+  </div>
+
+  <h4 class="fw-bold mt-4">📋 الاستثناءات الحالية:</h4>
+
+  <ul id="excList" class="list-group"></ul>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

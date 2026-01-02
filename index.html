@@ -1,61 +1,36 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<title>برنامج المراقبة</title>
-<style>
-body {
-  font-family: "Tahoma";
-  background:#f5f5f5;
-}
-.day-card {
-  background:white;
-  padding:15px;
-  border-radius:10px;
-  margin:10px;
-  width:150px;
-  box-shadow:0 0 8px #ccc;
-  cursor:pointer;
-  display:inline-block;
-  text-align:center;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>نظام توزيع المراقبة</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
+<body class="bg-light">
 
-<h2>الأيام (اضغط يوم لإضافة الاستثناءات)</h2>
+<div class="container mt-5">
 
-<div id="days"></div>
+  <h1 class="text-center mb-4 fw-bold">📘 نظام توزيع المراقبة</h1>
 
-<script>
-google.script.run.withSuccessHandler(renderDays).getExamDays();
+  <div class="list-group shadow">
 
-function renderDays(days) {
+    <a href="distribute.html" class="list-group-item list-group-item-action">
+      🔄 توزيع أيام الاختبارات
+    </a>
 
-  const container = document.getElementById("days");
-  container.innerHTML = "";
+    <a href="exceptions.html" class="list-group-item list-group-item-action">
+      🚫 الاستثناءات (المواد + المعلمين)
+    </a>
 
-  days.forEach(day => {
-    let d = document.createElement("div");
-    d.className = "day-card";
-    d.innerHTML = `
-      <b>${day}</b><br>
-      <span>اضغط للإدارة</span>
-    `;
+    <a href="follow.html" class="list-group-item list-group-item-action">
+      📊 كشف متابعة المعلمين
+    </a>
 
-    d.onclick = () => openDay(day);
+  </div>
 
-    container.appendChild(d);
-  });
-}
+</div>
 
-function openDay(day){
-  google.script.run.withSuccessHandler(html => {
-    document.body.innerHTML = html;
-  }).getDayEditor(day);
-}
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
