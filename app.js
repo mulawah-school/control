@@ -1,4 +1,4 @@
-const API = "https://script.google.com/macros/s/AKfycbzMXIRJPkQlkcnfaz1StwKivZEbghqL4u9XBfX_NnUzLtB24lVbrGHq6NNlbOqx0btTHw/exec";
+const API = "https://script.google.com/macros/s/AKfycby7Db1jKc8vlX_LFv5g136xCTuPNRnPkKBRdi06IBxZX7zCPK8ad2kjJNGzs1FqHYPp1g/exec";
 
 /************* API CALLER **************/
 async function call(action, params = {}) {
