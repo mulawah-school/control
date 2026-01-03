@@ -1,36 +1,79 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>نظام توزيع المراقبة</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>نظام توزيع المراقبة</title>
+<link rel="stylesheet" href="style.css">
+
+<!-- مكتبة Excel -->
+<script src="libs/xlsx.full.min.js"></script>
+
+<!-- مكتبة PDF -->
+<script src="libs/jspdf.umd.min.js"></script>
+<script src="libs/jspdf.plugin.autotable.js"></script>
+
 </head>
 
-<body class="bg-light">
+<body>
 
-<div class="container mt-5">
+<h1>📘 نظام إدارة المراقبة – بدون Google Sheets</h1>
 
-  <h1 class="text-center mb-4 fw-bold">📘 نظام توزيع المراقبة</h1>
+<!-- 1) رفع ملف المعلمين -->
+<section class="card">
+<h2>👨‍🏫 رفع ملف أسماء المعلمين</h2>
+<input type="file" id="fileTeachers">
+<button onclick="uploadTeachers()">رفع الملف</button>
+<div id="teacherStatus"></div>
+</section>
 
-  <div class="list-group shadow">
+<!-- 2) إضافة اختبار -->
+<section class="card">
+<h2>📝 إضافة اختبار جديد</h2>
+<div class="row">
+    <input type="date" id="examDate">
+    <input type="text" id="examSubject" placeholder="المادة">
+    <input type="number" id="examPeriod" placeholder="الفترة">
+    <input type="number" id="examCommittee" placeholder="اللجنة">
+    <input type="number" id="examNeeded" placeholder="عدد المراقبين">
+    <input type="text" id="examDuration" placeholder="المدة (مثال 2:00)">
+    <button onclick="addExam()">➕ إضافة</button>
+</div>
+<table id="examTable"></table>
+</section>
 
-    <a href="distribute.html" class="list-group-item list-group-item-action">
-      🔄 توزيع أيام الاختبارات
-    </a>
+<!-- 3) الاستثناءات -->
+<section class="card">
+<h2>⚠️ الاستثناءات</h2>
 
-    <a href="exceptions.html" class="list-group-item list-group-item-action">
-      🚫 الاستثناءات (المواد + المعلمين)
-    </a>
+<select id="daySelect"></select>
+<select id="teacherSelect"></select>
+<select id="subjectSelect"></select>
 
-    <a href="follow.html" class="list-group-item list-group-item-action">
-      📊 كشف متابعة المعلمين
-    </a>
+<button onclick="addTeacherException()">استثناء معلم</button>
+<button onclick="addSubjectException()">استثناء مادة</button>
 
-  </div>
+<table id="exceptionTable"></table>
+</section>
 
+<!-- 4) تنفيذ التوزيع -->
+<section class="card">
+<h2>⚙️ التوزيع الذكي</h2>
+<button onclick="runDistribution()">تشغيل التوزيع</button>
+
+<table id="resultTable"></table>
+
+<div class="row">
+<button onclick="exportExcel()">📤 تصدير Excel</button>
+<button onclick="exportPDF()">📄 تصدير PDF</button>
 </div>
 
-<script src="app.js"></script>
+</section>
+
+<script src="script.js"></script>
 </body>
 </html>
+<section class="card">
+    <h2>📊 متابعة المراقبين (Follow Matrix)</h2>
+    <button onclick="buildFollowMatrix()">عرض المتابعة</button>
+    <div id="followMatrix"></div>
+</section>

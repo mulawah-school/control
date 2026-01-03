@@ -1,11 +1,95 @@
 body {
-  font-family: "Cairo", sans-serif;
+  font-family: "Tahoma", sans-serif;
+  background: #f4f4f4;
+  margin: 0;
+  padding: 20px;
+  direction: rtl;
+  text-align: right;
 }
 
-.table {
+h1 {
+  text-align: center;
+  color: #003399;
+}
+
+.card {
   background: white;
+  padding: 20px;
+  margin: 15px 0;
+  border-radius: 8px;
+  box-shadow: 0 0 5px #ccc;
 }
 
-.list-group-item {
-  font-size: 1.1rem;
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+input, select, button {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #aaa;
+}
+
+button {
+  background: #0066cc;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #004c99;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+table th, table td {
+  border: 1px solid #aaa;
+  padding: 8px;
+  text-align: center;
+}
+
+table th {
+  background: #d9e6f2;
+}
+
+.ok {
+  background: #ccffcc !important;
+}
+
+.whatsapp-btn {
+  background: green;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+#followMatrix table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+#followMatrix th, #followMatrix td {
+    border: 1px solid #aaa;
+    padding: 8px;
+    text-align: center;
+}
+
+.follow-ok {
+    background: #ccffcc;
+}
+
+.follow-empty {
+    background: #fff;
+}
+
+.follow-header {
+    background: #cce0ff;
+    font-weight: bold;
 }
